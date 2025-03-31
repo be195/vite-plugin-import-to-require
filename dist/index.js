@@ -3,16 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.importToRequirePlugin = exports.defaultImportToRequireOption = exports.nodeBuiltinModules = void 0;
 const typescript_1 = __importDefault(require("typescript"));
 const module_1 = require("module");
-exports.nodeBuiltinModules = new Set(module_1.builtinModules);
 const nodePrefix = 'node:';
-function isNodeBuiltinModule(moduleName) {
-    if (moduleName.startsWith(nodePrefix))
-        moduleName = moduleName.replace(nodePrefix, '');
-    return exports.nodeBuiltinModules.has(moduleName);
-}
 function transformImportToRequire(code, options) {
     const ns = options.namespace ? options.namespace + '.' : '';
     const sourceFile = typescript_1.default.createSourceFile('temp.ts', code, typescript_1.default.ScriptTarget.ESNext, true);
@@ -21,7 +14,7 @@ function transformImportToRequire(code, options) {
         const visit = (node) => {
             if (typescript_1.default.isImportDeclaration(node) && typescript_1.default.isStringLiteral(node.moduleSpecifier)) {
                 const moduleName = node.moduleSpecifier.text;
-                if (options.transformAll || (isNodeBuiltinModule(moduleName) && node.importClause && node.importClause.namedBindings)) {
+                if (options.transformAll || (module_1.isBuiltin(moduleName) && node.importClause && node.importClause.namedBindings)) {
                     if (typescript_1.default.isNamedImports(node.importClause.namedBindings)) {
                         const requireStatement = `const { ${node.importClause.namedBindings.elements.map((e) => e.name.text).join(', ')} } = ${ns}require('${moduleName}')`;
                         return typescript_1.default.factory.createExpressionStatement(typescript_1.default.factory.createIdentifier(requireStatement));
